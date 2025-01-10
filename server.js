@@ -4,7 +4,7 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = 10000;
 
 // Database configuration
 const dbConfig = {
