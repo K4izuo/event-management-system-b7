@@ -1,0 +1,17 @@
+# Node.js dependencies
+node_modules/*
+package-lock.json
+
+.env
+
+# Logs
+logs/
+*.log
+
+# IDE files
+.vscode/
+.idea/*
+
+# Temporary files
+*.tmp
+*.temp
