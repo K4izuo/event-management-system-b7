@@ -4,7 +4,7 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 
 const app = express();
-const port = 10000;
+const port = process.env.PORT || 10000;
 
 // Database configuration
 const dbConfig = {
@@ -15,22 +15,53 @@ const dbConfig = {
   port: 3306
 };
 
-// Middleware
-app.use(express.json());
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://K4izuo.github.io'],
-  credentials: true
-}));
+// Enhanced CORS configuration
+const corsOptions = {
+  origin: ['http://localhost:5173', 'https://k4izuo.github.io'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 
-// Database connection
+// Apply middleware
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Add security headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+  next();
+});
+
+// Enhanced database connection with retry mechanism
 const db = mysql.createConnection(dbConfig);
 
 function handleDisconnect() {
   db.on('error', function(err) {
     console.log('Database error:', err);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
       console.log('Reconnecting to database...');
-      handleDisconnect();
+      setTimeout(() => {
+        db.connect((err) => {
+          if (err) {
+            console.error("Reconnection failed:", err);
+            setTimeout(handleDisconnect, 2000);
+          } else {
+            console.log("Reconnected to MySQL database");
+          }
+        });
+      }, 2000);
     } else {
       throw err;
     }
